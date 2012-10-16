@@ -1,5 +1,5 @@
 var StrappLogger = StrappLogger || {
-    initTime: new Date().getTime()
+    
 };
 
 StrappLogger.version = 2.0;
@@ -10,14 +10,15 @@ StrappLogger.SendStack = function (config) {
             loggingUrl: null,               // URL that accepts complete logging result as JSON
             callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
             applicationReference: null,     // ???
-            applicationReferences: null     // List of application references that the logger can use
+            applicationReferences: null,    // List of application references that the logger can use
+			initTime: null					// Timestamp when the stopwatch was started
         };
 
         this.outCounter = 0;
         this.inCounter = 0;
         this.outStack = [];
         this.inStack = [];
-        this.startTime = StrappLogger.initTime;
+        this.startTime = config.initTime;
         this.firstRequestTime = null;
         this.complete = false;
         this.console = window.console || {
@@ -140,7 +141,7 @@ StrappLogger.SendStack = function (config) {
         results = {
             applicationReference: config.applicationReference,
             totalResponseTime: total,
-            idleTime: this.firstRequestTime - StrappLogger.initTime,
+            idleTime: this.firstRequestTime - this.startTime,
             premature: premature || false,
             requests: []
         };
