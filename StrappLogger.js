@@ -6,7 +6,7 @@ StrappLogger.version = 2.0;
 
 StrappLogger.SendStack = function (config) {
     this.init = function (config) {
-       config = $.extend({
+       config = jQuery.extend({
 			loggingUrl: null,               // URL that accepts complete logging result as JSON
 			callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
 			applicationReference: null,     // Top level application reference
@@ -37,21 +37,21 @@ StrappLogger.SendStack = function (config) {
 
         var that = this;
 
-        $(document).ajaxSend(function (e, jqxhr, settings) {
+        jQuery(document).ajaxSend(function (e, jqxhr, settings) {
             that.out(e, jqxhr, settings);
         });
 
-        $(document).ajaxComplete(function (e, jqxhr, settings) {
+        jQuery(document).ajaxComplete(function (e, jqxhr, settings) {
             that.inbound(e, jqxhr, settings);
         });
 
-        $(document).ajaxError(function (e, jqxhr, settings) {
+        jQuery(document).ajaxError(function (e, jqxhr, settings) {
             if (200 != jqxhr.status) {
                 that.inbound(e, jqxhr, settings);
             }
         });
 
-        $(window).on('beforeunload', function () {
+        window.onbeforeunload = function () {
             var results, json;
 
             if (!that.complete) {
@@ -60,26 +60,28 @@ StrappLogger.SendStack = function (config) {
 
                 window.open(config.callingHomeUrl + "?result=" + json, "callinghome", "location=1,status=0,scrollbars=0,toolbar=0,resizable=0,width=5,height=5");
             }
-        });
+        };
 
-        $.ajaxPrefilter(function (options) {
-            var url = options.url, modifier;
+		if (config.applicationReferences) {
+			jQuery.ajaxPrefilter(function (options) {
+				var url = options.url, modifier;
 
-            if (url.indexOf(config.loggingUrl) >= 0) {
-                return;
-            }
+				if (url.indexOf(config.loggingUrl) >= 0) {
+					return;
+				}
 
-            modifier = "?";
+				modifier = "?";
 
-            if (options.url.indexOf(modifier) > 0) {
-                modifier = "&";
-            }
+				if (options.url.indexOf(modifier) > 0) {
+					modifier = "&";
+				}
 
-            options.url = options.url + modifier + "appRef=" + config.applicationReferences.pop();
-        });
+				options.url = options.url + modifier + "appRef=" + config.applicationReferences.pop();
+			});
+		}
 		
 		if (!config.expectAsyncRequests) {
-			$(window).load(function() {
+			jQuery(window).load(function() {
 				that.checkStatus();
 			});
 		}
@@ -212,7 +214,7 @@ StrappLogger.SendStack = function (config) {
             
         };
 
-        $.ajax({
+        jQuery.ajax({
             url: config.loggingUrl,
             type: 'POST',
             dataType: 'json',
