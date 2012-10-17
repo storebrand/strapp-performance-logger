@@ -1,25 +1,25 @@
 # Strapp logger
 
-Tradisjonelt logger vi tid på transaksjoner til Strapp fra serversiden. I moderne webapplikasjoner er det derimot slik at mye tid kan gå med etter at den første responsen er levert fra serveren. Relevante faktorerer her
-er AJAX-forespørsler, lasting av statiske ressurser som Javascript, CSS og grafikk, samt eksekveringstid på Javascript. Av den grunn er det ofte et betydelig misforhold mellom tiden som medgår på serversiden og den
-tiden en bruker opplever medgår i nettleseren.
+Tradisjonelt logger vi tid pÃ¥ transaksjoner til Strapp fra serversiden. I moderne webapplikasjoner er det derimot slik at mye tid kan gÃ¥ med etter at den fÃ¸rste responsen er levert fra serveren. Relevante faktorerer her
+er AJAX-forespÃ¸rsler, lasting av statiske ressurser som Javascript, CSS og grafikk, samt eksekveringstid pÃ¥ Javascript. Av den grunn er det ofte et betydelig misforhold mellom tiden som medgÃ¥r pÃ¥ serversiden og den
+tiden en bruker opplever medgÃ¥r i nettleseren.
 
-Hensikten med scriptet er å kunne ta tiden på den brukeropplevde tiden det tar å laste en side, enkelt sagt start og stoppe klokken i nettleseren. Dette inkluderer asynkrone forespørsler (AJAX) som utføres etter at selve 
-siden er lastet og lasting av statiske ressurser. Kort sagt er oppgaven til scriptet å detektere når en side er fullstendig ferdig lastet, og deretter rapportere dette tilbake til serveren slik at denne kan logge transaksjonen
+Hensikten med scriptet er Ã¥ kunne ta tiden pÃ¥ den brukeropplevde tiden det tar Ã¥ laste en side, enkelt sagt start og stoppe klokken i nettleseren. Dette inkluderer asynkrone forespÃ¸rsler (AJAX) som utfÃ¸res etter at selve 
+siden er lastet og lasting av statiske ressurser. Kort sagt er oppgaven til scriptet Ã¥ detektere nÃ¥r en side er fullstendig ferdig lastet, og deretter rapportere dette tilbake til serveren slik at denne kan logge transaksjonen
 til Strapp.
 
 ## Bruk
 
-For å avgjøre totaltid for en sidelasting, må vi avgjøre når stoppeklokken skal starte. Å finne det rette tidspunktet kan variere fra applikasjon til applikasjon, så det er opp til den aktuelle applikasjonen og registrere et
-timestamp som representerer det reelle starttidspunktet for sidelastingen. Så langt har vi sett behov for å gjøre dette på to ulike måter: Enten ved å starte klokken tidlig i siden som lastes eller skrive timestamp ned i en cookie
-som senere hentes opp.
+For Ã¥ avgjÃ¸re totaltid for en sidelasting, mÃ¥ vi avgjÃ¸re nÃ¥r stoppeklokken skal starte. Ã… finne det rette tidspunktet kan variere fra applikasjon til applikasjon, sÃ¥ det er opp til den aktuelle applikasjonen og registrere et
+timestamp som representerer det reelle starttidspunktet for sidelastingen. SÃ¥ langt har vi sett behov for Ã¥ gjÃ¸re dette pÃ¥ to ulike mÃ¥ter: Enten ved Ã¥ starte klokken tidlig i siden som lastes eller skrive timestamp ned i en cookie
+som senere hentes opp. Selve scriptet er uavhengig av hvilken metode som benyttes for Ã¥ registrere starttidspunkt, det sentrale er at scriptet initialiseres med et starttidspunkt.
 
-### Starte klokken når respons er mottatt
+### Starte klokken nÃ¥r respons er mottatt
 
-For noen applikasjoner påløper det meste av lastetiden etter at den første responsen er mottatt. Et eksempel på en slik applikasjon er _KiC_, som returnerer et sideskall som deretter henter all data asynkront. I slike tilfeller 
-kan starttidspunktet registreres så tidlig som mulig i HTML-koden som er returnert:
+For noen applikasjoner pÃ¥lÃ¸per det meste av lastetiden etter at den fÃ¸rste responsen er mottatt. Et eksempel pÃ¥ en slik applikasjon er _KiC_, som returnerer et sideskall som deretter henter data asynkront. I slike tilfeller 
+kan starttidspunktet registreres sÃ¥ tidlig som mulig i HTML-koden som er returnert:
 
-```javascript
+```html
 <script type="text/javascript">
 	var StopWatch = StopWatch || {};
 
@@ -27,7 +27,15 @@ kan starttidspunktet registreres så tidlig som mulig i HTML-koden som er returne
 </script>
 ```
 
-### Starte klokken uten
+Denne tilnÃ¦rmingen vil fÃ¸lgelig _miste_ den tiden det tok Ã¥ hente det fÃ¸rste HTML-dokumentet, men kan vÃ¦re en god tilnÃ¦rming.
+
+### Starte klokken utenfor applikasjonen og lagre til cookie
+
+*TODO*
+
+
+
+
 
 
 
