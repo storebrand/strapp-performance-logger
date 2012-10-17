@@ -6,15 +6,12 @@ StrappLogger.version = 2.0;
 
 StrappLogger.SendStack = function (config) {
     this.init = function (config) {
-        var configOptions = {
-            loggingUrl: null,               // URL that accepts complete logging result as JSON
-            callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
-            applicationReference: null,     // ???
-            applicationReferences: null,    // List of application references that the logger can use
-			initTime: null					// Timestamp when the stopwatch was started
-        };
-		
-		config = $.extend({
+       config = $.extend({
+			loggingUrl: null,               // URL that accepts complete logging result as JSON
+			callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
+			applicationReference: null,     // Top level application reference
+			applicationReferences: null,    // List of application references that the logger can use
+			initTime: null,					// Timestamp when the stopwatch was started
 			expectAsyncRequests: true,
 			debug: {
 				results: false
