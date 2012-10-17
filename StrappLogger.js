@@ -6,13 +6,20 @@ StrappLogger.version = 2.0;
 
 StrappLogger.SendStack = function (config) {
     this.init = function (config) {
-        var defaultConfig = {
+        var configOptions = {
             loggingUrl: null,               // URL that accepts complete logging result as JSON
             callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
             applicationReference: null,     // ???
             applicationReferences: null,    // List of application references that the logger can use
 			initTime: null					// Timestamp when the stopwatch was started
         };
+		
+		config = $.extend({
+			expectAsyncRequests: true,
+			debug: {
+				results: false
+			}
+		}, config);
 
         this.outCounter = 0;
         this.inCounter = 0;
@@ -21,7 +28,8 @@ StrappLogger.SendStack = function (config) {
         this.startTime = config.initTime;
         this.firstRequestTime = null;
         this.complete = false;
-        this.console = window.console || {
+        
+		this.console = window.console || {
             log: function () {
             },
             info: function () {
@@ -60,7 +68,7 @@ StrappLogger.SendStack = function (config) {
         $.ajaxPrefilter(function (options) {
             var url = options.url, modifier;
 
-            if (url.indexOf(config.loggingUrl) > 0) {
+            if (url.indexOf(config.loggingUrl) >= 0) {
                 return;
             }
 
@@ -72,6 +80,12 @@ StrappLogger.SendStack = function (config) {
 
             options.url = options.url + modifier + "appRef=" + config.applicationReferences.pop();
         });
+		
+		if (!config.expectAsyncRequests) {
+			$(window).load(function() {
+				that.checkStatus();
+			});
+		}
     };
 
     this.out = function (e, jqxhr, settings) {
@@ -97,8 +111,12 @@ StrappLogger.SendStack = function (config) {
         this.checkStatus();
     };
 
+	this.isComplete = function() {
+		return this.outCounter == this.inCounter && !this.complete;
+	};
+	
     this.checkStatus = function () {
-        if (this.outCounter == this.inCounter && !this.complete) {
+        if (this.isComplete()) {
             var results = this.calculateResults();
             this.complete = true;
             this.logResultsToStrapp(results);
@@ -137,11 +155,17 @@ StrappLogger.SendStack = function (config) {
         now = new Date().getTime();
 
         total = now - this.startTime;
-
+		var idleTime = 0;
+		
+		if (this.firstRequestTime)
+		{
+			idleTime = this.firstRequestTime - this.startTime;
+		}
+		
         results = {
             applicationReference: config.applicationReference,
             totalResponseTime: total,
-            idleTime: this.firstRequestTime - this.startTime,
+            idleTime: idleTime,
             premature: premature || false,
             requests: []
         };
@@ -204,13 +228,16 @@ StrappLogger.SendStack = function (config) {
 
                 callback(data);
             },
-            error: function () {
+            error: function (jqXHR, textStatus, errorThrown) {
                 callback({
                     ok: false
                 });
             }
         });
-
+		
+		if (config.debug.results) {
+			this.console.log(result);
+		}
     };
 
     this.init(config);
