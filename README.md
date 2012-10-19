@@ -8,6 +8,10 @@ Hensikten med scriptet er å kunne ta tiden på den brukeropplevde tiden det tar
 siden er lastet og lasting av statiske ressurser. Kort sagt er oppgaven til scriptet å detektere når en side er fullstendig ferdig lastet, og deretter rapportere dette tilbake til serveren slik at denne kan logge transaksjonen
 til Strapp.
 
+Ved å implementere Strapp-logging på serversiden og kombinere dette med tidsmålinger fra nettleseren vha. scriptet kan det produseres komplette transaksjoner slik som dette eksemplet viser:
+
+    http://pavo/strapp/logg.action?loggForm.transaksjonsReferanse=1c4f0224-219d-4271-a8c2-eb8dba592a5a
+
 ## Ressurser
 
 Logging vil alltid påføre applikasjonen noe mer tidsbruk. For å holde dette påslaget så lite som mulig er Javascriptet som utfører monitorering og logging tilbake til server hostet på Storebrand sitt CDN på Amazon. Scriptet er versjonert og en versjonert utgave av scriptet vil aldri endres. Nyeste versjon er alltid tilgjengelig under egen katalog.
@@ -48,7 +52,43 @@ Denne tilnærmingen vil følgelig _miste_ den tiden det tok å hente det første
 
 Dersom det er behov for å starte stoppeklokken tidligere, f. eks. når brukeren klikker på en lenke som leder til siden som skal måles, er anbefalingen at tidspunktet (som timestamp) lagres i en cookie. Verdien i cookien kan da senere leses opp slik at riktig tidsmåling logges.
 
+### Initialisering av StrappLogger.SendStack
 
+SendStack-objektet holder rede på når en side er ferdig lastet, f. eks. ved å monitorere ut- og inngående AJAX-forespørsler. Når en side er komplett lastet, vil scriptet sende registrerte data tilbake til serveren som POST av JSON-data.
+
+Filen StrappLogger.js må inkluderes på siden, og umiddelbart etter at scriptet er lastet på StrappLogger.SendStack initialiseres. På denne måte vil all aktivitet på siden registreres. De grunnleggende egenskapene objektet skal initialiseres med er:
+
+* Registrert starttidspunkt
+* URL som skal benyttes for å logge data
+* Strapp application reference som skal benyttes som toppnivå transaksjon
+
+I tillegg finnes det flere attributter som kan benyttes for mer avansert oppførsel.
+
+Eksempel på initialisering:
+
+```html
+<script type="text/javascript">
+	new StrappLogger.SendStack({
+		initTime: initTime,
+		loggingUrl: 'strapplogger.html', 
+		applicationReference: '25892e17-80f6-415f-9c65-7395632f0223'		
+	});
+</script>
+```
+
+I eksemplet over vil JSON-data som beskriver sidelastingen postes til _strapplogger.html_ når siden er ferdig lastet. Under vises et eksempel på JSON-data som postes:
+
+```json
+{	
+	applicationReference: "25892e17-80f6-415f-9c65-7395632f0223",
+	idleTime: 0,
+	premature: false,
+	requests: [],	
+	totalResponseTime: 124
+}
+```
+
+Her ser vi at den totale lastetiden var på 124 ms og at det ikke har vært utført noen AJAX-requests ifb. sidelastingen. Application reference som objektet ble initialisert med er også inkludert i strukturen slik at loggingen på serversiden kan logge transaksjonen med riktig toppnivå. Ved å skru dette riktig sammen blir transaksjonen i nettleseren (les: sidelastingen) toppnivået i Strapp-treet. Dette implementeres enklest ved at alle transaksjoner som logges på serveren benytter application reference som SendStack er initialisert med som _client reference_.
 
 
 
