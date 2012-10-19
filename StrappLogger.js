@@ -6,7 +6,7 @@ StrappLogger.version = 2.0;
 
 StrappLogger.SendStack = function (config) {
     this.init = function (config) {
-       config = jQuery.extend({
+		this.settings = {
 			loggingUrl: null,               // URL that accepts complete logging result as JSON
 			callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
 			applicationReference: null,     // Top level application reference
@@ -16,13 +16,15 @@ StrappLogger.SendStack = function (config) {
 			debug: {
 				results: false
 			}
-		}, config);
+		};
+	   
+		jQuery.extend(this.settings, config);
 
         this.outCounter = 0;
         this.inCounter = 0;
         this.outStack = [];
         this.inStack = [];
-        this.startTime = config.initTime;
+        this.startTime = this.settings.initTime;
         this.firstRequestTime = null;
         this.complete = false;
         
@@ -58,15 +60,15 @@ StrappLogger.SendStack = function (config) {
                 results = that.calculateResults(true);
                 json = JSON.stringify(results);
 
-                window.open(config.callingHomeUrl + "?result=" + json, "callinghome", "location=1,status=0,scrollbars=0,toolbar=0,resizable=0,width=5,height=5");
+                window.open(that.settings.callingHomeUrl + "?result=" + json, "callinghome", "location=1,status=0,scrollbars=0,toolbar=0,resizable=0,width=5,height=5");
             }
         };
 
-		if (config.applicationReferences) {
+		if (this.settings.applicationReferences) {
 			jQuery.ajaxPrefilter(function (options) {
 				var url = options.url, modifier;
 
-				if (url.indexOf(config.loggingUrl) >= 0) {
+				if (url.indexOf(this.settings.loggingUrl) >= 0) {
 					return;
 				}
 
@@ -76,11 +78,11 @@ StrappLogger.SendStack = function (config) {
 					modifier = "&";
 				}
 
-				options.url = options.url + modifier + "appRef=" + config.applicationReferences.pop();
+				options.url = options.url + modifier + "appRef=" + this.settings.applicationReferences.pop();
 			});
 		}
 		
-		if (!config.expectAsyncRequests) {
+		if (!this.settings.expectAsyncRequests) {
 			jQuery(window).load(function() {
 				that.checkStatus();
 			});
@@ -162,7 +164,7 @@ StrappLogger.SendStack = function (config) {
 		}
 		
         results = {
-            applicationReference: config.applicationReference,
+            applicationReference: this.settings.applicationReference,
             totalResponseTime: total,
             idleTime: idleTime,
             premature: premature || false,
@@ -215,7 +217,7 @@ StrappLogger.SendStack = function (config) {
         };
 
         jQuery.ajax({
-            url: config.loggingUrl,
+            url: this.settings.loggingUrl,
             type: 'POST',
             dataType: 'json',
             data: json,
@@ -234,8 +236,8 @@ StrappLogger.SendStack = function (config) {
             }
         });
 		
-		if (config.debug.results) {
-			this.console.log(result);
+		if (this.settings.debug.results) {
+			this.console.log('Total response time: ' + result.totalResponseTime + ' ms. # of AJAX-requests: ' + result.requests.length);
 		}
     };
 
