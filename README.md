@@ -20,6 +20,10 @@ Logging vil alltid påføre applikasjonen noe mer tidsbruk. For å holde dette p
 
     http://elements.storebrand.no/strapp-perf-logger/latest/StrappLogger.js
 
+Alternativ (oppdateres hyppigere):
+
+    http://s3-eu-west-1.amazonaws.com/stbdesign/strapp-perf-logger/latest/StrappLogger.js
+
 ## Bruk
 
 For å gjøre måling av tidsbruk ved sidelasting, må to operasjoner utføres:
