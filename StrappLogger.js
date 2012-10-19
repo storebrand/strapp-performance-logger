@@ -54,16 +54,18 @@ StrappLogger.SendStack = function (config) {
             }
         });
 
-        window.onbeforeunload = function () {
-            var results, json;
+		if (this.settings.callingHomeUrl) {
+			window.onbeforeunload = function () {
+				var results, json;
 
-            if (!that.complete) {
-                results = that.calculateResults(true);
-                json = JSON.stringify(results);
+				if (!that.complete) {
+					results = that.calculateResults(true);
+					json = JSON.stringify(results);
 
-                window.open(that.settings.callingHomeUrl + "?result=" + json, "callinghome", "location=1,status=0,scrollbars=0,toolbar=0,resizable=0,width=5,height=5");
-            }
-        };
+					window.open(that.settings.callingHomeUrl + "?result=" + json, "callinghome", "location=1,status=0,scrollbars=0,toolbar=0,resizable=0,width=5,height=5");
+				}
+			};
+		}
 
 		if (this.settings.applicationReferences) {
 			jQuery.ajaxPrefilter(function (options) {
