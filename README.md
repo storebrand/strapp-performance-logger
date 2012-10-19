@@ -12,7 +12,7 @@ Ved å implementere Strapp-logging på serversiden og kombinere dette med tidsm�
 
     http://pavo/strapp/logg.action?loggForm.transaksjonsReferanse=1c4f0224-219d-4271-a8c2-eb8dba592a5a
 
-## Avhengigheter
+### Avhengigheter
 
 Dette kan forandres med tiden, men pt. er scriptet avhengig av at jQuery og JSON2 er tilgjengelig.
 
