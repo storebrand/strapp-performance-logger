@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		<meta charset="utf-8">
+        <title>StrappLogger Playground</title>
+        <meta name="viewport" content="width=device-width">
+        <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,700">
+	</head>
+    <body>
+	   <a id="link" href="index.html">Klikk for å ta meg videre...</a>
+	   
+	   <script src="jquery-1.8.2.min.js"></script>
+	   <script src="../StrappLogger.js"></script>
+	   <script src="sinon-1.4.2.js"></script>
+	   
+	   <script>
+			 $(document).ready(function () {
+				$('#link').click(function() {
+					StrappLogger.Cookies.createCookie("index", new Date().getTime());
+				});
+			 });
+
+	   </script>
+    </body>
+</html>

@@ -1,37 +1,36 @@
 <!DOCTYPE html>
 <html lang="en-us">
     <head>
-        <meta charset="utf-8">
-        <title>StrappLogger Playground</title>
-        <meta name="viewport" content="width=device-width">
-        <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,700">
-    </head>
-    <body>
-       <script>
-			var StopWatch = StopWatch || {};
+        <script>
+			var StrappLogger = StrappLogger || {};
 
-			StopWatch.initTime = new Date().getTime();
-       </script>
-	   
-	   <img src="wallpaper1.jpg" />
-	   
-	   <script src="jquery-1.8.2.min.js"></script>
-	   <script src="sinon-1.4.2.js"></script>
-       <script src="../StrappLogger.js"></script>
-	   
-	   <script>
-			new StrappLogger.SendStack({
+			StrappLogger.config = {
 				loggingUrl: '/logging.html',
 				callingHomeUrl: null,           
 				applicationReference: '1234',     
 				applicationReferences: null,    
-				initTime: StopWatch.initTime,
+				initTime: new Date().getTime(),
+				cookieName: 'index',
 				expectAsyncRequests: false,
 				debug: {
 					results: true
 				}
-			});
-			
+			};
+       </script>
+		
+		<meta charset="utf-8">
+        <title>StrappLogger Playground</title>
+        <meta name="viewport" content="width=device-width">
+        <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,700">
+	</head>
+    <body>
+	   <img src="wallpaper1.jpg" />
+	   
+	   <script src="jquery-1.8.2.min.js"></script>
+	   <script src="../StrappLogger.js"></script>
+	   <script src="sinon-1.4.2.js"></script>
+	   
+	   <script>
 			var i = 0;
 			
 			for (i = 0; i < 10000; i++)

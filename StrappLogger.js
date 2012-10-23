@@ -4,6 +4,35 @@ var StrappLogger = StrappLogger || {
 
 StrappLogger.version = 2.0;
 
+StrappLogger.Cookies = {
+	createCookie: function(name, value) {
+		var expires = "";
+		var hours = 1;
+		
+		var date = new Date();
+		date.setTime(date.getTime() + (hours * 60 * 60 * 1000));
+		expires = "; expires=" + date.toGMTString();
+		
+		document.cookie = name + "=" + value + expires + "; path=/";
+	},
+
+	readCookie: function(name) {
+		var nameEQ = name + "=";
+		var ca = document.cookie.split(';');
+		for(var i=0;i < ca.length;i++) {
+			var c = ca[i];
+			while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+			if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+		}
+		
+		return null;
+	},
+
+	eraseCookie: function(name) {
+		StrappLogger.Cookies.createCookie(name, "", -1);
+	}
+};
+
 StrappLogger.SendStack = function (config) {
     this.init = function (config) {
 		this.settings = {
@@ -13,6 +42,7 @@ StrappLogger.SendStack = function (config) {
 			applicationReference: null,     // Top level application reference
 			applicationReferences: null,    // List of application references that the logger can use
 			initTime: null,					// Timestamp when the stopwatch was started
+			cookieName: null,
 			expectAsyncRequests: true,		// True if the page load includes AJAX-requests
 			debug: {
 				results: false				// True if debug information should be logged to console
@@ -25,8 +55,17 @@ StrappLogger.SendStack = function (config) {
         this.inCounter = 0;
         this.outStack = [];
         this.inStack = [];
-        this.startTime = this.settings.initTime;
-        this.firstRequestTime = null;
+        
+		var startTime = null;
+		
+		if (this.settings.cookieName) {
+			startTime = StrappLogger.Cookies.readCookie(this.settings.cookieName);
+			StrappLogger.Cookies.eraseCookie(this.settings.cookieName);
+		}
+		
+		this.startTime = startTime || this.settings.initTime;
+        
+		this.firstRequestTime = null;
         this.complete = false;
         
 		this.console = window.console || {
@@ -253,3 +292,7 @@ StrappLogger.SendStack = function (config) {
 
     this.init(config);
 };
+
+if (StrappLogger.config) {
+	new StrappLogger.SendStack(StrappLogger.config);
+}
