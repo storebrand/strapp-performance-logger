@@ -67,7 +67,7 @@ Dersom det er behov for å starte stoppeklokken tidligere, f. eks. når brukeren
 
 SendStack-objektet holder rede på når en side er ferdig lastet, f. eks. ved å monitorere ut- og inngående AJAX-forespørsler. Når en side er komplett lastet, vil scriptet sende registrerte data tilbake til serveren som POST av JSON-data.
 
-Filen StrappLogger.js må inkluderes på siden, og umiddelbart etter at scriptet er lastet på StrappLogger.SendStack initialiseres. På denne måte vil all aktivitet på siden registreres. De grunnleggende egenskapene objektet skal initialiseres med er:
+Filen StrappLogger.js må inkluderes på siden. Scriptet vil da ta tak i config-objektet som beskrevet over og umiddelbart initialisere StrappLogger.SendStack. På denne måte vil all aktivitet på siden registreres. De grunnleggende egenskapene objektet skal initialiseres med er:
 
 * Registrert starttidspunkt
 * URL som skal benyttes for å logge data
@@ -75,19 +75,7 @@ Filen StrappLogger.js må inkluderes på siden, og umiddelbart etter at scriptet
 
 I tillegg finnes det flere attributter som kan benyttes for mer avansert oppførsel.
 
-Eksempel på initialisering:
-
-```html
-<script type="text/javascript">
-	new StrappLogger.SendStack({
-		initTime: initTime,
-		loggingUrl: 'strapplogger.html', 
-		applicationReference: '25892e17-80f6-415f-9c65-7395632f0223'		
-	});
-</script>
-```
-
-I eksemplet over vil JSON-data som beskriver sidelastingen postes til _strapplogger.html_ når siden er ferdig lastet. Under vises et eksempel på JSON-data som postes:
+Når siden er ferdig lastet, vil scriptet poste data om sidelastingen til URL for logging. Eksempel på JSON-data som postes:
 
 ```json
 {	
