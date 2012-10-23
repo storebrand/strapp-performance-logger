@@ -110,7 +110,7 @@ StrappLogger.SendStack = function (config) {
 			jQuery.ajaxPrefilter(function (options) {
 				var url = options.url, modifier;
 
-				if (url.indexOf(this.settings.loggingUrl) >= 0) {
+				if (url.indexOf(that.settings.loggingUrl) >= 0) {
 					return;
 				}
 
@@ -120,7 +120,7 @@ StrappLogger.SendStack = function (config) {
 					modifier = "&";
 				}
 
-				options.url = options.url + modifier + "appRef=" + this.settings.applicationReferences.pop();
+				options.url = options.url + modifier + "appRef=" + that.settings.applicationReferences.pop();
 			});
 		}
 		
