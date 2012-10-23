@@ -44,13 +44,16 @@ som senere hentes opp. Selve scriptet er uavhengig av hvilken metode som benytte
 #### Starte klokken når respons er mottatt
 
 For noen applikasjoner påløper det meste av lastetiden etter at den første responsen er mottatt. Et eksempel på en slik applikasjon er _KiC_, som returnerer et sideskall som deretter henter data asynkront. I slike tilfeller 
-kan starttidspunktet registreres så tidlig som mulig i HTML-koden som er returnert:
+kan starttidspunktet registreres så tidlig som mulig i HTML-koden. Koden under kan plasseres som første element i HEAD-taggen i dokumentet.
 
 ```html
-<script type="text/javascript">
-	var StopWatch = StopWatch || {};
-
-	StopWatch.initTime = new Date().getTime();
+<script>
+	var StrappLogger = StrappLogger || {};
+	
+	StrappLogger.config = {
+		loggingUrl: '/logging.html', 
+		initTime: new Date().getTime()
+	};
 </script>
 ```
 
