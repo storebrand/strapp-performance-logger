@@ -54,6 +54,7 @@ StrappLogger.SendStack = function (config) {
         this.outCounter = 0;
         this.inCounter = 0;
         this.outStack = [];
+		this.outStackMetaData = [];
         this.inStack = [];
         
 		var startTime = null;
@@ -120,7 +121,13 @@ StrappLogger.SendStack = function (config) {
 					modifier = "&";
 				}
 
-				options.url = options.url + modifier + "appRef=" + that.settings.applicationReferences.pop();
+				var applicationReference = that.settings.applicationReferences.pop();
+				
+				options.url = options.url + modifier + "appRef=" + applicationReference;
+				
+				that.outStackMetaData[options.url] = {
+					applicationReference: applicationReference
+				};
 			});
 		}
 		
@@ -226,11 +233,17 @@ StrappLogger.SendStack = function (config) {
                     if (this.inStack[url]) {
                         response = this.inStack[url];
                         
-                        results.requests.push({
+						var requestData = {
                             url: url,
                             responseTime: response.time - this.outStack[url],
                             status: response.status
-                        });
+                        };
+						
+						if (this.outStackMetaData[url]) {
+							requestData.applicationReference = this.outStackMetaData[url].applicationReference;
+						}
+						
+                        results.requests.push(requestData);
                     }
                     else {
                         this.console.error("Did not find [" + url + "]");
