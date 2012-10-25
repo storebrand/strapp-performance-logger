@@ -14,10 +14,15 @@
 				applicationReferences: null,    
 				initTime: new Date().getTime(),
 				cookieName: 'index',
-				expectAsyncRequests: true,
-				exclude : {
-					requests: ['kic/test.html']
-				},
+				profiles : [
+					{
+						id: 'p1'						
+					},
+					{
+						id: 'p2',
+						excludes: ['.*kic/.*', '.*vg.*', '.*nettavisen.*', '.*dagbladet.*']
+					}
+				],
 				debug: {
 					results: true
 				}
@@ -52,6 +57,27 @@
 			
 			$.ajax({
 			  url: "kic/test.html",
+			  context: document.body
+			}).done(function() { 
+			  $(this).addClass("done");
+			});
+			
+			$.ajax({
+			  url: "http://www.vg.no",
+			  context: document.body
+			}).done(function() { 
+			  $(this).addClass("done");
+			});
+			
+			$.ajax({
+			  url: "http://www.dagbladet.no",
+			  context: document.body
+			}).done(function() { 
+			  $(this).addClass("done");
+			});
+			
+			$.ajax({
+			  url: "http://www.nettavisen.no",
 			  context: document.body
 			}).done(function() { 
 			  $(this).addClass("done");

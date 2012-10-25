@@ -33,6 +33,114 @@ StrappLogger.Cookies = {
 	}
 };
 
+StrappLogger.Stack = function(config) {
+	this.init = function(config) {
+		this.id = config.id;
+		this.outCounter = 0;
+        this.inCounter = 0;
+        this.outStack = [];
+		this.inStack = [];
+		this.complete = false;
+		this.ready = false;
+		this.results = null;	
+		
+		this.settings = {
+			id: null,
+			excludes: null
+		};
+		
+		jQuery.extend(this.settings, config);
+		
+		this.excludes = null;
+		
+		if (this.settings.excludes) {
+			this.excludes = [];
+			
+			for (var i = 0; i < this.settings.excludes.length; i++) {
+				this.excludes.push(new RegExp(this.settings.excludes[i]));
+			}
+		}
+	};
+	
+	this.getOutStack = function() {
+		return this.outStack;
+	};
+	
+	this.getInStack = function() {
+		return this.inStack;
+	};
+	
+	this.getFirstRequestTime = function() {
+		return this.firstRequestTime;
+	};
+	
+	this.markAsComplete = function() {
+		this.complete = true;
+	};
+	
+	this.markAsReady = function() {
+		this.ready = true;
+	}
+	
+	this.setResults = function(results) {
+		this.results = results;
+	};
+	
+	this.getResults = function() {
+		return this.results;
+	};
+	
+	this.includeUrl = function(url) {
+		var include = true;
+			
+		if (this.excludes) {
+			for (var i = 0; i < this.excludes.length; i++) {
+				var result = this.excludes[i].exec(url);
+			
+				if  (result) {
+					include = false;
+				}
+			}
+		}
+		
+		return include;
+	};
+	
+	this.out = function (e, jqxhr, settings) {
+        var url = settings.url;
+
+        if (url.indexOf(this.settings.loggingUrl) < 0) {
+            if (this.includeUrl(url)) {
+				this.outStack[url] = new Date().getTime();
+				this.outCounter++;
+			}
+        }
+        
+        if (!this.firstRequestTime) {
+            this.firstRequestTime = new Date().getTime();
+        }
+    };
+
+    this.inbound = function (e, jqxhr, settings) {        
+        var url = settings.url;
+		
+		if (this.includeUrl(url)) {
+			this.inStack[settings.url] = {
+				time: new Date().getTime(),
+				status: jqxhr.status
+			};
+
+			this.inCounter++;
+		}
+    };
+
+	this.isComplete = function() {
+		return this.ready && (this.complete || this.outCounter == this.inCounter);
+	};
+	
+	this.init(config);
+};
+
 StrappLogger.SendStack = function (config) {
     this.init = function (config) {
 		this.settings = {
@@ -44,9 +152,7 @@ StrappLogger.SendStack = function (config) {
 			initTime: null,					// Timestamp when the stopwatch was started
 			cookieName: null,
 			expectAsyncRequests: true,		// True if the page load includes AJAX-requests
-			exclude : {
-				requests: null				// Array of URL patterns to exclude
-			},
+			profiles : null,				// Array of profiles
 			debug: {
 				results: false				// True if debug information should be logged to console
 			}
@@ -54,17 +160,6 @@ StrappLogger.SendStack = function (config) {
 		
 		jQuery.extend(this.settings, config);
 
-        this.outCounter = 0;
-        this.inCounter = 0;
-        this.outStack = [];
-		this.outStackMetaData = [];
-        this.inStack = [];
-		this.excludeURLs = null;
-		
-		if (this.settings.exclude.requests) {
-		
-		}
-        
 		var startTime = null;
 		
 		if (this.settings.cookieName) {
@@ -72,10 +167,33 @@ StrappLogger.SendStack = function (config) {
 			StrappLogger.Cookies.eraseCookie(this.settings.cookieName);
 		}
 		
+		this.outStackMetaData = [];
+		this.excludeURLs = null;
+		
+		if (this.settings.profiles) {
+			var profiles = this.settings.profiles;
+			
+			this.profiles = [];
+			
+			for (var i = 0; i < profiles.length; i++) {
+				var profileConfig = profiles[i];
+				
+				profileConfig.loggingUrl = this.settings.loggingUrl;
+				
+				var profile = new StrappLogger.Stack(profileConfig);
+				
+				this.profiles.push(profile);
+			}
+		} else {
+			var defaultProfile = new StrappLogger.Stack({
+				id: 'default',
+				loggingUrl: this.settings.loggingUrl
+			});
+			
+			this.profiles = [defaultProfile];
+		}
+		
 		this.startTime = startTime || this.settings.initTime;
-        
-		this.firstRequestTime = null;
-        this.complete = false;
         
 		this.console = window.console || {
             log: function () {
@@ -89,7 +207,9 @@ StrappLogger.SendStack = function (config) {
         var that = this;
 
         jQuery(document).ajaxSend(function (e, jqxhr, settings) {
-            that.out(e, jqxhr, settings);
+            for (var i = 0; i < that.profiles.length; i++) {
+				that.profiles[i].out(e, jqxhr, settings);
+			}
         });
 
         jQuery(document).ajaxComplete(function (e, jqxhr, settings) {
@@ -97,7 +217,7 @@ StrappLogger.SendStack = function (config) {
         });
 
         jQuery(document).ajaxError(function (e, jqxhr, settings) {
-            if (200 != jqxhr.status) {
+            if (jqxhr.status > 0 && 200 != jqxhr.status) {
                 that.inbound(e, jqxhr, settings);
             }
         });
@@ -137,87 +257,71 @@ StrappLogger.SendStack = function (config) {
 					applicationReference: applicationReference
 				};
 			});
-		}
+		}		
 		
-		if (!this.settings.expectAsyncRequests) {
-			jQuery(window).load(function() {
-				that.checkStatus();
-			});
+		jQuery(window).load(function() {
+			for (var i = 0; i < that.profiles.length; i++) {
+				var profile = that.profiles[i];
+				profile.markAsReady();
+				that.checkStatus(profile);
+			}
+		});
+    };
+
+	this.inbound = function(e, jqxhr, settings) {
+		for (var i = 0; i < this.profiles.length; i++) {
+			var profile = this.profiles[i];
+			
+			if (!profile.isComplete()) {				
+				profile.inbound(e, jqxhr, settings);
+				this.checkStatus(profile);
+			}
 		}
-    };
-
-    this.out = function (e, jqxhr, settings) {
-        var url = settings.url;
-
-        if (url.indexOf(this.settings.loggingUrl) < 0) {
-            this.outStack[settings.url] = new Date().getTime();
-            this.outCounter++;
-        }
-        
-        if (!this.firstRequestTime) {
-            this.firstRequestTime = new Date().getTime();
-        }
-    };
-
-    this.inbound = function (e, jqxhr, settings) {        
-        this.inStack[settings.url] = {
-            time: new Date().getTime(),
-            status: jqxhr.status
-        };
-
-        this.inCounter++;
-        this.checkStatus();
-    };
-
-	this.isComplete = function() {
-		return this.outCounter == this.inCounter && !this.complete;
 	};
 	
-    this.checkStatus = function () {
-        if (this.isComplete()) {
-            var results = this.calculateResults();
-            this.complete = true;
-            this.logResultsToStrapp(results);
+	this.isAllProfilesComplete = function() {
+		var allProfilesComplete = true;
+			
+		for (var i = 0; i < this.profiles.length; i++) {
+			var profile = this.profiles[i];
+			
+			if (!profile.complete) {
+				allProfilesComplete = false;
+				break;
+			}
+		}
+		
+		return allProfilesComplete;
+	};
+	
+    this.checkStatus = function (profile) {
+        if (profile.isComplete()) {
+            var results = this.calculateResults(profile);
+            profile.markAsComplete();
+			profile.setResults(results);
+			
+			if (this.isAllProfilesComplete()) {
+				this.logAllProfilesToStrapp();
+			}
+			
+			return true;
         }
+		
+		return false;
     };
 
-    this.logDebugStatus = function () {
-        var missing, url;
-
-        if (this.outCounter > 30)
-        {
-            this.console.info(this.outCounter + " - " + this.inCounter);
-
-            missing = null;
-
-            for (url in this.outStack) {
-                if (this.outStack.hasOwnProperty(url)) {
-                    if (!this.inStack[url]) {
-                        if (!missing) {
-                            missing = "";
-                        }
-                        missing += url + ";";
-                    }
-                }
-            }
-            
-            if (missing) {
-                this.console.info(missing);
-            }
-        }
-    };
-
-    this.calculateResults = function (premature) {
-        var total, results, url, response, now;
+    this.calculateResults = function (profile, premature) {
+        var total, results, url, response, now, firstRequestTime, idleTime;
 
         now = new Date().getTime();
 
         total = now - this.startTime;
-		var idleTime = 0;
+		idleTime = 0;
+		firstRequestTime = profile.getFirstRequestTime();
 		
-		if (this.firstRequestTime)
+		if (firstRequestTime)
 		{
-			idleTime = this.firstRequestTime - this.startTime;
+			idleTime = firstRequestTime - this.startTime;
 		}
 		
         results = {
@@ -236,14 +340,17 @@ StrappLogger.SendStack = function (config) {
 		}
 
         if (!premature) {
-            for (url in this.outStack) {
-                if (this.outStack.hasOwnProperty(url)) {
-                    if (this.inStack[url]) {
-                        response = this.inStack[url];
+            var outStack = profile.getOutStack();
+			var inStack = profile.getInStack();
+			
+			for (url in outStack) {
+                if (outStack.hasOwnProperty(url)) {
+                    if (inStack[url]) {
+                        response = inStack[url];
                         
 						var requestData = {
                             url: url,
-                            responseTime: response.time - this.outStack[url],
+                            responseTime: response.time - outStack[url],
                             status: response.status
                         };
 						
@@ -263,20 +370,16 @@ StrappLogger.SendStack = function (config) {
         return results;
     };
 
-    this.printResultToConsole = function (result) {
-        var requests, request, i;
-
-        this.console.info("Total time: " + result.totalResponseTime + " ms");
-
-        requests = result.requests;
-
-        for (i = 0; i < requests.length; i++) {
-            request = requests[i];
-            this.console.info(request.responseTime + " ms\t\t" + request.url);
-        }
-    };
-
-    this.logResultsToStrapp = function (result, callback) {
+	this.logAllProfilesToStrapp = function() {
+		for (var i = 0; i < this.profiles.length; i++) {
+			var profile = this.profiles[i];
+			var results = profile.getResults();
+			
+			this.logResultsToStrapp(profile.id, results);
+		}
+	};
+	
+    this.logResultsToStrapp = function (profileId, result, callback) {
         var json, that;
         
         json = JSON.stringify(result);
@@ -312,6 +415,8 @@ StrappLogger.SendStack = function (config) {
 			if (this.settings.clientId) {
 				logStatement += '. ClientId: [' + this.settings.clientId + ']';
 			}
+			
+			logStatement += '. Profile: [' + profileId + ']';
 			
 			this.console.log(logStatement);
 		}
