@@ -121,7 +121,7 @@ StrappLogger.Stack = function(config) {
 
     this.inbound = function (url, time, status) {        
         if (this.includeUrl(url)) {
-			this.inStack[settings.url] = {
+			this.inStack[url] = {
 				time: time,
 				status: status
 			};
@@ -141,16 +141,21 @@ StrappLogger.SendStack = function (config) {
     this.init = function (config) {
 		this.settings = {
 			clientId: null,
-			loggingUrl: null,               // URL that accepts complete logging result as JSON
-			callingHomeUrl: null,           // URL used for logging incomplete results if the window is closed before the page has completely loaded
-			applicationReference: null,     // Top level application reference
-			applicationReferences: null,    // List of application references that the logger can use
-			initTime: null,					// Timestamp when the stopwatch was started
+			loggingUrl: null,               				// URL that accepts complete logging result as JSON
+			callingHomeUrl: null,           				// URL used for logging incomplete results if the window is closed before the page has completely loaded
+			applicationReference: null,     				// Top level application reference
+			applicationReferences: null,    				// List of application references that the logger can use
+			initTime: null,									// Timestamp when the stopwatch was started
 			cookieName: null,
-			expectAsyncRequests: true,		// True if the page load includes AJAX-requests
-			profiles : null,				// Array of profiles
+			expectAsyncRequests: true,						// True if the page load includes AJAX-requests
+			profiles : null,								// Array of profiles
+			events : {										// Complete event that is fired once a profile is complete
+				complete : function (profileId, results) {
+
+				}
+			},
 			debug: {
-				results: false				// True if debug information should be logged to console
+				results: false								// True if debug information should be logged to console
 			}
 		};
 		
@@ -259,15 +264,21 @@ StrappLogger.SendStack = function (config) {
 		}		
 		
 		jQuery(window).load(function() {
-			for (var i = 0; i < that.profiles.length; i++) {
-				var profile = that.profiles[i];
-				profile.markAsReady();
-				
-				if (!that.settings.expectAsyncRequests) {
-					that.checkStatus(profile);
-				}
-			}
+			this.markAsReady();
 		});
+    };
+
+    this.markAsReady = function() {
+    	var profiles = this.profiles;
+
+    	for (var i = 0; i < profiles.length; i++) {
+			var profile = profiles[i];
+			profile.markAsReady();
+			
+			if (!this.settings.expectAsyncRequests) {
+				this.checkStatus(profile);
+			}
+		}
     };
 
 	this.inbound = function(e, jqxhr, settings) {
@@ -309,6 +320,8 @@ StrappLogger.SendStack = function (config) {
 			if (this.isAllProfilesComplete()) {
 				this.logAllProfilesToStrapp();
 			}
+
+			this.settings.events.complete(profile.id, results);
 			
 			return true;
         }
