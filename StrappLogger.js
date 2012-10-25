@@ -264,7 +264,7 @@ StrappLogger.SendStack = function (config) {
 		}		
 		
 		jQuery(window).load(function() {
-			this.markAsReady();
+			that.markAsReady();
 		});
     };
 
