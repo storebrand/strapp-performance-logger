@@ -80,7 +80,7 @@ StrappLogger.Stack = function(config) {
 	
 	this.markAsReady = function() {
 		this.ready = true;
-	}
+	};
 	
 	this.setResults = function(results) {
 		this.results = results;
@@ -135,7 +135,7 @@ StrappLogger.Stack = function(config) {
     };
 
 	this.isComplete = function() {
-		return this.ready && (this.complete || this.outCounter == this.inCounter);
+		return this.ready && (this.outCounter == this.inCounter);
 	};
 	
 	this.init(config);
@@ -263,7 +263,10 @@ StrappLogger.SendStack = function (config) {
 			for (var i = 0; i < that.profiles.length; i++) {
 				var profile = that.profiles[i];
 				profile.markAsReady();
-				that.checkStatus(profile);
+				
+				if (!that.settings.expectAsyncRequests) {
+					that.checkStatus(profile);
+				}
 			}
 		});
     };
@@ -337,6 +340,10 @@ StrappLogger.SendStack = function (config) {
 		
 		if (this.settings.clientId) {
 			results.clientId = this.settings.clientId;
+		}
+		
+		if (profile.id !== 'default') {
+			results.profileId = profile.id;
 		}
 
         if (!premature) {
