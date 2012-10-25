@@ -44,6 +44,9 @@ StrappLogger.SendStack = function (config) {
 			initTime: null,					// Timestamp when the stopwatch was started
 			cookieName: null,
 			expectAsyncRequests: true,		// True if the page load includes AJAX-requests
+			exclude : {
+				requests: null				// Array of URL patterns to exclude
+			},
 			debug: {
 				results: false				// True if debug information should be logged to console
 			}
@@ -56,6 +59,11 @@ StrappLogger.SendStack = function (config) {
         this.outStack = [];
 		this.outStackMetaData = [];
         this.inStack = [];
+		this.excludeURLs = null;
+		
+		if (this.settings.exclude.requests) {
+		
+		}
         
 		var startTime = null;
 		
@@ -141,7 +149,7 @@ StrappLogger.SendStack = function (config) {
     this.out = function (e, jqxhr, settings) {
         var url = settings.url;
 
-        if (url.indexOf(this.logToStrappUrl) < 0) {
+        if (url.indexOf(this.settings.loggingUrl) < 0) {
             this.outStack[settings.url] = new Date().getTime();
             this.outCounter++;
         }
@@ -299,7 +307,13 @@ StrappLogger.SendStack = function (config) {
         });
 		
 		if (this.settings.debug.results) {
-			this.console.log('Total response time: ' + result.totalResponseTime + ' ms. # of AJAX-requests: ' + result.requests.length);
+			var logStatement = 'Total response time: ' + result.totalResponseTime + ' ms. # of AJAX-requests: ' + result.requests.length;
+			
+			if (this.settings.clientId) {
+				logStatement += '. ClientId: [' + this.settings.clientId + ']';
+			}
+			
+			this.console.log(logStatement);
 		}
     };
 

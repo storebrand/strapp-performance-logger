@@ -4,14 +4,20 @@
         <script>
 			var StrappLogger = StrappLogger || {};
 
+			var config1 = 
+			
 			StrappLogger.config = {
+				clientId: 'mintest',
 				loggingUrl: '/logging.html',
 				callingHomeUrl: null,           
 				applicationReference: '1234',     
 				applicationReferences: null,    
 				initTime: new Date().getTime(),
 				cookieName: 'index',
-				expectAsyncRequests: false,
+				expectAsyncRequests: true,
+				exclude : {
+					requests: ['kic/test.html']
+				},
 				debug: {
 					results: true
 				}
@@ -28,7 +34,6 @@
 	   
 	   <script src="jquery-1.8.2.min.js"></script>
 	   <script src="../StrappLogger.js"></script>
-	   <script src="sinon-1.4.2.js"></script>
 	   
 	   <script>
 			var i = 0;
@@ -44,6 +49,20 @@
 					s += "abc ";
 				}
 			}
+			
+			$.ajax({
+			  url: "kic/test.html",
+			  context: document.body
+			}).done(function() { 
+			  $(this).addClass("done");
+			});
+			
+			$.ajax({
+			  url: "k360/test.html",
+			  context: document.body
+			}).done(function() { 
+			  $(this).addClass("done");
+			});
 			
 			console.log("Heisann");
 	   </script>
