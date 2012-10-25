@@ -106,12 +106,10 @@ StrappLogger.Stack = function(config) {
 		return include;
 	};
 	
-	this.out = function (e, jqxhr, settings) {
-        var url = settings.url;
-
+	this.out = function (url, time) {
         if (url.indexOf(this.settings.loggingUrl) < 0) {
             if (this.includeUrl(url)) {
-				this.outStack[url] = new Date().getTime();
+				this.outStack[url] = time;
 				this.outCounter++;
 			}
         }
@@ -121,13 +119,11 @@ StrappLogger.Stack = function(config) {
         }
     };
 
-    this.inbound = function (e, jqxhr, settings) {        
-        var url = settings.url;
-		
-		if (this.includeUrl(url)) {
+    this.inbound = function (url, time, status) {        
+        if (this.includeUrl(url)) {
 			this.inStack[settings.url] = {
-				time: new Date().getTime(),
-				status: jqxhr.status
+				time: time,
+				status: status
 			};
 
 			this.inCounter++;
@@ -207,8 +203,11 @@ StrappLogger.SendStack = function (config) {
         var that = this;
 
         jQuery(document).ajaxSend(function (e, jqxhr, settings) {
+            var url = settings.url;
+            var time = new Date().getTime();
+
             for (var i = 0; i < that.profiles.length; i++) {
-				that.profiles[i].out(e, jqxhr, settings);
+				that.profiles[i].out(url, time);
 			}
         });
 
@@ -272,11 +271,15 @@ StrappLogger.SendStack = function (config) {
     };
 
 	this.inbound = function(e, jqxhr, settings) {
+		var url = settings.url;
+		var time = new Date().getTime();
+		var status = jqxhr.status;
+
 		for (var i = 0; i < this.profiles.length; i++) {
 			var profile = this.profiles[i];
 			
 			if (!profile.isComplete()) {				
-				profile.inbound(e, jqxhr, settings);
+				profile.inbound(url, time, status);
 				this.checkStatus(profile);
 			}
 		}
