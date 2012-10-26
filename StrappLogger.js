@@ -22,7 +22,7 @@ StrappLogger.Cookies = {
 		for(var i=0;i < ca.length;i++) {
 			var c = ca[i];
 			while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-			if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+			if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
 		}
 		
 		return null;
@@ -90,6 +90,10 @@ StrappLogger.Stack = function(config) {
 		return this.results;
 	};
 	
+	this.hasRecordedActivity = function() {
+		return this.outCounter > 0;
+	};
+	
 	this.includeUrl = function(url) {
 		var include = true;
 			
@@ -106,16 +110,14 @@ StrappLogger.Stack = function(config) {
 		return include;
 	};
 	
-	this.out = function (url, time) {
-        if (url.indexOf(this.settings.loggingUrl) < 0) {
-            if (this.includeUrl(url)) {
-				this.outStack[url] = time;
-				this.outCounter++;
-			}
-        }
+	this.out = function (url, time) {        
+		if (this.includeUrl(url)) {
+			this.outStack[url] = time;
+			this.outCounter++;
+		}
         
         if (!this.firstRequestTime) {
-            this.firstRequestTime = new Date().getTime();
+            this.firstRequestTime = time;
         }
     };
 
@@ -141,10 +143,10 @@ StrappLogger.SendStack = function (config) {
     this.init = function (config) {
 		this.settings = {
 			clientId: null,
-			loggingUrl: null,               				// URL that accepts complete logging result as JSON
-			callingHomeUrl: null,           				// URL used for logging incomplete results if the window is closed before the page has completely loaded
-			applicationReference: null,     				// Top level application reference
-			applicationReferences: null,    				// List of application references that the logger can use
+			loggingUrl: null,								// URL that accepts complete logging result as JSON
+			callingHomeUrl: null,							// URL used for logging incomplete results if the window is closed before the page has completely loaded
+			applicationReference: null,						// Top level application reference
+			applicationReferences: null,					// List of application references that the logger can use
 			initTime: null,									// Timestamp when the stopwatch was started
 			cookieName: null,
 			expectAsyncRequests: true,						// True if the page load includes AJAX-requests
@@ -210,9 +212,11 @@ StrappLogger.SendStack = function (config) {
         jQuery(document).ajaxSend(function (e, jqxhr, settings) {
             var url = settings.url;
             var time = new Date().getTime();
-
-            for (var i = 0; i < that.profiles.length; i++) {
-				that.profiles[i].out(url, time);
+			
+			if (!that.isLoggingUrl(url)) {
+				for (var i = 0; i < that.profiles.length; i++) {
+					that.profiles[i].out(url, time);
+				}
 			}
         });
 
@@ -269,29 +273,36 @@ StrappLogger.SendStack = function (config) {
     };
 
     this.markAsReady = function() {
-    	var profiles = this.profiles;
+		var profiles = this.profiles;
 
-    	for (var i = 0; i < profiles.length; i++) {
+		for (var i = 0; i < profiles.length; i++) {
 			var profile = profiles[i];
 			profile.markAsReady();
 			
-			if (!this.settings.expectAsyncRequests) {
+			if (!this.settings.expectAsyncRequests || profile.hasRecordedActivity()) {
 				this.checkStatus(profile);
 			}
 		}
     };
 
+	this.isLoggingUrl = function(url) {
+		return url.indexOf(this.settings.loggingUrl) >=0;
+	};
+	
 	this.inbound = function(e, jqxhr, settings) {
 		var url = settings.url;
-		var time = new Date().getTime();
-		var status = jqxhr.status;
+		
+		if (!this.isLoggingUrl(url)) {
+			var time = new Date().getTime();
+			var status = jqxhr.status;
 
-		for (var i = 0; i < this.profiles.length; i++) {
-			var profile = this.profiles[i];
-			
-			if (!profile.isComplete()) {				
-				profile.inbound(url, time, status);
-				this.checkStatus(profile);
+			for (var i = 0; i < this.profiles.length; i++) {
+				var profile = this.profiles[i];
+				
+				if (!profile.isComplete()) {				
+					profile.inbound(url, time, status);
+					this.checkStatus(profile);
+				}
 			}
 		}
 	};
