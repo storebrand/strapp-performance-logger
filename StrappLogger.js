@@ -41,7 +41,7 @@ StrappLogger.Stack = function(config) {
         this.outStack = [];
 		this.inStack = [];
 		this.complete = false;
-		this.ready = false;
+		this.loaded = false;
 		this.results = null;	
 		
 		this.settings = {
@@ -78,8 +78,8 @@ StrappLogger.Stack = function(config) {
 		this.complete = true;
 	};
 	
-	this.markAsReady = function() {
-		this.ready = true;
+	this.flagLoaded = function() {
+		this.loaded = true;
 	};
 	
 	this.setResults = function(results) {
@@ -133,7 +133,7 @@ StrappLogger.Stack = function(config) {
     };
 
 	this.isComplete = function() {
-		return this.ready && (this.outCounter == this.inCounter);
+		return this.loaded && (this.outCounter == this.inCounter);
 	};
 	
 	this.init(config);
@@ -268,16 +268,16 @@ StrappLogger.SendStack = function (config) {
 		}		
 		
 		jQuery(window).load(function() {
-			that.markAsReady();
+			that.flagLoaded();
 		});
     };
 
-    this.markAsReady = function() {
+    this.flagLoaded = function() {
 		var profiles = this.profiles;
 
 		for (var i = 0; i < profiles.length; i++) {
 			var profile = profiles[i];
-			profile.markAsReady();
+			profile.flagLoaded();
 			
 			if (!this.settings.expectAsyncRequests || profile.hasRecordedActivity()) {
 				this.checkStatus(profile);

@@ -8,7 +8,7 @@ describe("StrappLogger.Stack", function() {
       this.server.restore();
     });
 
-	describe("for a page load without async requests", function() {
+	/*describe("for a page load without async requests", function() {
 		describe("when the page is loaded", function() {
 			it("the logger should flag complete", function() {
 				var completeFnc = sinon.spy();
@@ -27,12 +27,12 @@ describe("StrappLogger.Stack", function() {
 					debug: { results: true }
 				});
 				
-				sendStack.markAsReady();
+				sendStack.flagLoaded();
 				
 				expect(completeFnc.callCount).toEqual(1);
 			});
 		});
-	});
+	});*/
 	
 	describe("for a page load with async requests", function() {	
 		describe("when all async requests for a single profile are complete and the load event fires before the async requests", function() {
@@ -53,7 +53,7 @@ describe("StrappLogger.Stack", function() {
 					debug: { results: true }
 				});
 
-				sendStack.markAsReady();
+				sendStack.flagLoaded();
 
 				jQuery.ajax({
 					url: "/my/page1"
@@ -105,7 +105,7 @@ describe("StrappLogger.Stack", function() {
 
 				this.server.respond();
 
-				sendStack.markAsReady();
+				sendStack.flagLoaded();
 
 				expect(completeFnc.callCount).toEqual(1);
 
