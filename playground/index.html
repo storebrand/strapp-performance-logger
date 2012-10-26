@@ -44,6 +44,7 @@
 	   <script>
 			var server = sinon.fakeServer.create();
       		server.respondWith([200, {}, "OK"]);
+			server.autoRespond = true;
 
 			var i = 0;
 			
@@ -93,8 +94,6 @@
 			}).done(function() { 
 			  $(this).addClass("done");
 			});
-
-			server.respond();
 			
 			console.log("Heisann");
 	   </script>

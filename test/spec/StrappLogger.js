@@ -55,13 +55,8 @@ describe("StrappLogger.Stack", function() {
 
 				sendStack.flagLoaded();
 
-				jQuery.ajax({
-					url: "/my/page1"
-				});
-
-				jQuery.ajax({
-					url: "/my/page2"
-				});
+				jQuery.ajax({url: "/my/page1"});
+				jQuery.ajax({url: "/my/page2"});
 
 				this.server.respond();
 
@@ -76,6 +71,62 @@ describe("StrappLogger.Stack", function() {
 				expect(requests.length).toEqual(2);
 				expect(requests[0].url).toEqual('/my/page1');
 				expect(requests[1].url).toEqual('/my/page2');
+			});
+		});
+		
+		describe("when all async requests for two profiles are complete", function() {
+			it("the logger should flag complete", function() {
+				var completeFnc = sinon.spy();
+
+				var sendStack = new StrappLogger.SendStack({
+					initTime : new Date().getTime(),
+					loggingUrl : '/logging',
+					profiles : [
+						{
+							id: 'p1'
+						},
+						{
+							id: 'p2',
+							excludes: ['.*p1/.*']
+						}
+					],
+					events : {
+						complete : completeFnc
+					},
+					debug: { results: true }
+				});
+
+				sendStack.flagLoaded();
+
+				jQuery.ajax({url: "/p1/page1"});
+				jQuery.ajax({url: "/p1/page2"});
+				jQuery.ajax({url: "/p2/page2"});
+
+				this.server.respond();
+
+				expect(completeFnc.callCount).toEqual(2);
+
+				// p1
+				var args = completeFnc.args[0];
+				expect(args[0]).toEqual('p1');
+
+				var results = args[1];
+				var requests = results.requests;
+
+				expect(requests.length).toEqual(3);
+				expect(requests[0].url).toEqual('/p1/page1');
+				expect(requests[1].url).toEqual('/p1/page2');
+				expect(requests[2].url).toEqual('/p2/page2');
+				
+				// p2
+				args = completeFnc.args[1];
+				expect(args[0]).toEqual('p2');
+
+				results = args[1];
+				requests = results.requests;
+
+				expect(requests.length).toEqual(1);
+				expect(requests[0].url).toEqual('/p2/page2');
 			});
 		});
 		
