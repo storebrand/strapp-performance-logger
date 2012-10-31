@@ -1,0 +1,1 @@
+java -jar jstd\JsTestDriver-1.3.5.jar --reset --tests all
