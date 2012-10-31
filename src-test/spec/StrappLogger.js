@@ -1,15 +1,24 @@
 describe("StrappLogger.Stack", function() {
     beforeEach(function() {
       this.server = sinon.fakeServer.create();
-      this.server.respondWith([200, {}, "OK"]);
+      this.server.respondWith([200, {}, "OK"]);	  
     });
 
     afterEach(function() {
       this.server.restore();
     });
 
-	/*describe("for a page load without async requests", function() {
+	describe("for a page load without async requests", function() {
 		describe("when the page is loaded", function() {
+			beforeEach(function() {
+				this.cookieName = "strapp-cookie";
+				this.clock = sinon.useFakeTimers();			
+			});
+			
+			afterEach(function() {
+				this.clock.restore();
+			});
+			
 			it("the logger should flag complete", function() {
 				var completeFnc = sinon.spy();
 
@@ -27,12 +36,79 @@ describe("StrappLogger.Stack", function() {
 					debug: { results: true }
 				});
 				
+				sendStack.flagReady();
 				sendStack.flagLoaded();
 				
+				this.clock.tick(3000);
+				
 				expect(completeFnc.callCount).toEqual(1);
+				
+				var args = completeFnc.args[0];
+				expect(args[0]).toEqual('load-without-async');
+				
+				var results = args[1];
+				expect(results.totalResponseTime).toBeLessThan(200);
 			});
 		});
-	});*/
+		
+		describe("when a page is loaded and init time is stored in a cookie", function() {
+			var cookieName = "strapp-cookie";
+			
+			beforeEach(function() {
+				this.cookieName = "strapp-cookie";
+				this.clock = sinon.useFakeTimers(new Date().getTime());	
+
+				var time = new Date().getTime();				
+				StrappLogger.Cookies.createCookie(cookieName, time);				
+			});
+			
+			afterEach(function() {
+				this.clock.restore();
+			});
+			
+			it("cookie should be available", function() {
+				var cookieValue = StrappLogger.Cookies.readCookie(cookieName);
+				expect(cookieValue).not.toBeNull();
+			});
+		
+			it("the logger should flag complete and use the value from the cookie as init time", function() {				
+				var completeFnc = sinon.spy();
+
+				this.clock.tick(2000);
+				
+				var sendStack = new StrappLogger.SendStack({
+					initTime : new Date().getTime(),
+					loggingUrl : '/logging',
+					"cookieName" : cookieName,
+					profiles : [
+						{
+							id: 'load-from-cookie'
+						}
+					],
+					events : {
+						complete : completeFnc
+					},
+					debug: { results: true }
+				});
+				
+				sendStack.flagReady();
+				sendStack.flagLoaded();
+				
+				this.clock.tick(3000);
+				
+				expect(completeFnc.callCount).toEqual(1);
+				
+				var args = completeFnc.args[0];
+				expect(args[0]).toEqual('load-from-cookie');
+				
+				var results = args[1];
+				expect(results.totalResponseTime).toEqual(2000);
+				
+				var cookieValue = StrappLogger.Cookies.readCookie(cookieName);				
+				expect(cookieValue).toBeNull();
+			});
+		});
+	});
 	
 	describe("for a page load with async requests", function() {	
 		describe("when all async requests for a single profile are complete and the load event fires before the async requests", function() {
@@ -53,6 +129,7 @@ describe("StrappLogger.Stack", function() {
 					debug: { results: true }
 				});
 
+				sendStack.flagReady();
 				sendStack.flagLoaded();
 
 				jQuery.ajax({url: "/my/page1"});
@@ -96,6 +173,7 @@ describe("StrappLogger.Stack", function() {
 					debug: { results: true }
 				});
 
+				sendStack.flagReady();
 				sendStack.flagLoaded();
 
 				jQuery.ajax({url: "/p1/page1"});

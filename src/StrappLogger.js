@@ -19,13 +19,24 @@ StrappLogger.Cookies = {
 	readCookie: function(name) {
 		var nameEQ = name + "=";
 		var ca = document.cookie.split(';');
-		for(var i=0;i < ca.length;i++) {
+		
+		var cookieValue = null;
+		
+		for (var i=0; i < ca.length; i++) {
 			var c = ca[i];
 			while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-			if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+			if (c.indexOf(nameEQ) === 0) {
+				cookieValue = c.substring(nameEQ.length, c.length);
+				break;
+			}
 		}
 		
-		return null;
+		if (cookieValue && cookieValue.length > 0) {
+			return cookieValue;
+		}
+		else {
+			return null;
+		}
 	},
 
 	eraseCookie: function(name) {
@@ -41,12 +52,15 @@ StrappLogger.Stack = function(config, completeFnc) {
         this.outStack = [];
 		this.inStack = [];
 		this.complete = false;
+		this.completedTime = null;
+		this.ready = false;
 		this.loaded = false;
 		this.results = null;	
 		
 		this.settings = {
 			id: null,
-			excludes: null
+			excludes: null,
+			waitAfterLoad: 3000
 		};
 		
 		jQuery.extend(this.settings, config);
@@ -74,12 +88,20 @@ StrappLogger.Stack = function(config, completeFnc) {
 		return this.firstRequestTime;
 	};
 	
-	this.markAsComplete = function() {
-		this.complete = true;
+	this.flagReady = function() {
+		this.ready = true;
 	};
 	
-	this.flagLoaded = function() {
+	this.flagLoaded = function(time) {
 		this.loaded = true;
+		
+		var that = this;
+		
+		if (!this.hasRecordedActivity()) {
+			window.setTimeout(function() {
+				that.checkStatus(time);
+			}, this.settings.waitAfterLoad);
+		}
 	};
 	
 	this.setResults = function(results) {
@@ -88,6 +110,10 @@ StrappLogger.Stack = function(config, completeFnc) {
 	
 	this.getResults = function() {
 		return this.results;
+	};
+	
+	this.getCompletedTime = function() {
+		return this.completedTime;
 	};
 	
 	this.hasRecordedActivity = function() {
@@ -130,18 +156,20 @@ StrappLogger.Stack = function(config, completeFnc) {
 
 			this.inCounter++;
 			
-			this.checkStatus();
+			this.checkStatus(time);
 		}
     };
 
-	this.checkStatus = function() {
+	this.checkStatus = function(time) {
 		if (this.outCounter == this.inCounter) {
+			this.complete = true;
+			this.completedTime = time;
 			completeFnc(this);
 		}
 	};
 	
 	this.isComplete = function() {
-		return this.loaded && (this.outCounter == this.inCounter);
+		return this.complete;
 	};
 	
 	this.init(config);
@@ -285,13 +313,16 @@ StrappLogger.SendStack = function (config) {
 		jQuery(window).load(function() {
 			that.flagLoaded();
 		});
+		
+		jQuery(document).ready(function() {
+			that.flagReady();
+		});
     };
 
 	this.onProfileComplete = function(profile) {
 		this.completeProfiles++;
 		
 		var results = this.calculateResults(profile);
-		profile.markAsComplete();
 		profile.setResults(results);
 		
 		this.settings.events.complete(profile.id, results);
@@ -303,12 +334,22 @@ StrappLogger.SendStack = function (config) {
 	
     this.flagLoaded = function() {
 		var profiles = this.profiles;
+		var time = new Date().getTime();
+		
+		for (var i = 0; i < profiles.length; i++) {
+			var profile = profiles[i];
+			profile.flagLoaded(time);
+		}
+    };
+	
+	this.flagReady = function() {
+		var profiles = this.profiles;
 
 		for (var i = 0; i < profiles.length; i++) {
 			var profile = profiles[i];
-			profile.flagLoaded();
+			profile.flagReady();
 		}
-    };
+	};
 
 	this.isLoggingUrl = function(url) {
 		return url.indexOf(this.settings.loggingUrl) >=0;
@@ -324,7 +365,7 @@ StrappLogger.SendStack = function (config) {
 			for (var i = 0; i < this.profiles.length; i++) {
 				var profile = this.profiles[i];
 				
-				if (!profile.isComplete()) {				
+				if (!profile.isComplete()) {			
 					profile.inbound(url, time, status);
 				}
 			}
@@ -332,11 +373,9 @@ StrappLogger.SendStack = function (config) {
 	};
 
     this.calculateResults = function (profile, premature) {
-        var total, results, url, response, now, firstRequestTime, idleTime;
+        var total, results, url, response, firstRequestTime, idleTime;
 
-        now = new Date().getTime();
-
-        total = now - this.startTime;
+        total = profile.getCompletedTime() - this.startTime;
 		idleTime = 0;
 		firstRequestTime = profile.getFirstRequestTime();
 		

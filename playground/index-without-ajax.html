@@ -19,8 +19,7 @@
 						id: 'p1'						
 					},
 					{
-						id: 'p2',
-						excludes: ['.*kic/.*', '.*vg.*', '.*nettavisen.*', '.*dagbladet.*']
+						id: 'p2'
 					}
 				],
 				debug: {
@@ -30,7 +29,7 @@
        </script>
 		
 		<meta charset="utf-8">
-        <title>StrappLogger Playground</title>
+        <title>StrappLogger Playground Without Ajax</title>
         <meta name="viewport" content="width=device-width">
         <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,700">
 	</head>
@@ -60,44 +59,7 @@
 				}
 			}
 			
-			console.log("Ferdig");
-			
-			$(document).ready(function() {
-				$.ajax({
-				  url: "kic/test.html",
-				  context: document.body
-				}).done(function() { 
-				  $(this).addClass("done");
-				});
-				
-				$.ajax({
-				  url: "http://www.vg.no",
-				  context: document.body
-				}).done(function() { 
-				  $(this).addClass("done");
-				});
-				
-				$.ajax({
-				  url: "http://www.dagbladet.no",
-				  context: document.body
-				}).done(function() { 
-				  $(this).addClass("done");
-				});
-				
-				$.ajax({
-				  url: "http://www.nettavisen.no",
-				  context: document.body
-				}).done(function() { 
-				  $(this).addClass("done");
-				});
-				
-				$.ajax({
-				  url: "k360/test.html",
-				  context: document.body
-				}).done(function() { 
-				  $(this).addClass("done");
-				});
-			});
+			console.log("Heisann");
 	   </script>
     </body>
 </html>
