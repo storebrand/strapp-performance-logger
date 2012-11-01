@@ -41,7 +41,7 @@ describe("StrappLogger.Stack", function() {
 				
 				this.clock.tick(3000);
 				
-				expect(completeFnc.callCount).toEqual(2);
+				expect(completeFnc.callCount).toEqual(1);
 				
 				var args = completeFnc.args[0];
 				expect(args[0]).toEqual('load-without-async');
