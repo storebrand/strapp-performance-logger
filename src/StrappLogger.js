@@ -2,7 +2,7 @@ var StrappLogger = StrappLogger || {
     
 };
 
-StrappLogger.version = 2.0;
+StrappLogger.version = 2.1;
 
 StrappLogger.Cookies = {
 	createCookie: function(name, value) {
