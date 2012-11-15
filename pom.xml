@@ -14,6 +14,8 @@
             <version>1.3.2.5</version>
             <scope>test</scope>
         </dependency>
+		
+		
     </dependencies>
 
     <build>
@@ -43,4 +45,12 @@
             </plugin>
         </plugins>
     </build>
+	
+	<pluginRepositories>
+		<pluginRepository>
+			<name>oss.sonatype.org</name>
+			<id>oss.sonatype.org</id>
+			<url>http://oss.sonatype.org/content/groups/public</url>
+		</pluginRepository>
+	</pluginRepositories>
 </project>

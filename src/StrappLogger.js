@@ -180,6 +180,8 @@ StrappLogger.SendStack = function (config) {
 		this.settings = {
 			clientId: null,
 			loggingUrl: null,								// URL that accepts complete logging result as JSON
+			transactionName: null,							// Name of transaction
+			version: null,									// Version number of the application
 			callingHomeUrl: null,							// URL used for logging incomplete results if the window is closed before the page has completely loaded
 			applicationReference: null,						// Top level application reference
 			applicationReferences: null,					// List of application references that the logger can use
@@ -391,12 +393,15 @@ StrappLogger.SendStack = function (config) {
             requests: []
         };
 		
-		if (this.settings.applicationReference) {
-			results.applicationReference = this.settings.applicationReference;
-		}
+		// Add meta data (if set), to the result
+		var metaData = ['applicationReference', 'clientId', 'transactionName', 'version'];
 		
-		if (this.settings.clientId) {
-			results.clientId = this.settings.clientId;
+		for (var i = 0; i < metaData.length; i++) {
+			var metaDataField = metaData[i];
+			
+			if (this.settings[metaDataField]) {
+				results[metaDataField] = this.settings[metaDataField];
+			}
 		}
 		
 		if (profile.id !== 'default') {

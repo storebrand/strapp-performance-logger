@@ -25,6 +25,9 @@ describe("StrappLogger.Stack", function() {
 				var sendStack = new StrappLogger.SendStack({
 					initTime : new Date().getTime(),
 					loggingUrl : '/logging',
+					clientId : 'myclient',
+					version : 1,
+					transactionName : 'my-transaction',
 					profiles : [
 						{
 							id: 'load-without-async'
@@ -32,7 +35,7 @@ describe("StrappLogger.Stack", function() {
 					],
 					events : {
 						complete : completeFnc
-					},
+					},					
 					debug: { results: true }
 				});
 				
@@ -48,6 +51,9 @@ describe("StrappLogger.Stack", function() {
 				
 				var results = args[1];
 				expect(results.totalResponseTime).toBeLessThan(200);
+				expect(results.transactionName).toEqual('my-transaction');
+				expect(results.clientId).toEqual('myclient');
+				expect(results.version).toEqual(1);
 			});
 		});
 		
