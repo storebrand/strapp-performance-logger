@@ -1,7 +1,7 @@
 describe("StrappLogger.Stack", function() {
     beforeEach(function() {
       this.server = sinon.fakeServer.create();
-      this.server.respondWith([200, {}, "OK"]);	  
+      this.server.respondWith([200, {}, "OK"]);
     });
 
     afterEach(function() {
@@ -112,6 +112,46 @@ describe("StrappLogger.Stack", function() {
 				
 				var cookieValue = StrappLogger.Cookies.readCookie(cookieName);				
 				expect(cookieValue).toBeNull();
+			});
+		});
+		
+		describe("when a page is loaded and init time is not stored in a cookie, but cookie is expected", function() {
+			var cookieName = "strapp-cookie";
+			
+			beforeEach(function() {
+				this.clock = sinon.useFakeTimers(new Date().getTime());				
+			});
+			
+			afterEach(function() {
+				this.clock.restore();
+			});
+			
+			it("the logger should never flag complete", function() {				
+				var completeFnc = sinon.spy();
+
+				this.clock.tick(2000);
+				
+				var sendStack = new StrappLogger.SendStack({
+					initTime : new Date().getTime(),
+					loggingUrl : '/logging',
+					"cookieName" : cookieName,
+					profiles : [
+						{
+							id: 'load-from-cookie'
+						}
+					],
+					events : {
+						complete : completeFnc
+					},
+					debug: { results: true }
+				});
+				
+				sendStack.flagReady();
+				sendStack.flagLoaded();
+				
+				this.clock.tick(3000);
+				
+				expect(completeFnc.callCount).toEqual(0);
 			});
 		});
 	});

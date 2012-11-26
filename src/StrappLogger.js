@@ -60,7 +60,8 @@ StrappLogger.Stack = function(config, completeFnc) {
 		this.settings = {
 			id: null,
 			excludes: null,
-			waitAfterLoad: 3000
+			waitAfterLoad: 3000,
+			silent: false
 		};
 		
 		jQuery.extend(this.settings, config);
@@ -164,7 +165,10 @@ StrappLogger.Stack = function(config, completeFnc) {
 		if (this.outCounter == this.inCounter) {
 			this.complete = true;
 			this.completedTime = time;
-			completeFnc(this);
+			
+			if (!this.settings.silent) {
+				completeFnc(this);
+			}
 		}
 	};
 	
@@ -201,11 +205,27 @@ StrappLogger.SendStack = function (config) {
 		
 		jQuery.extend(this.settings, config);
 
+		this.console = window.console || {
+            log: function () {
+            },
+            info: function () {
+            },
+            error: function () {
+            }
+        };
+		
 		var startTime = null;
+		
+		this.silent = false;
 		
 		if (this.settings.cookieName) {
 			startTime = StrappLogger.Cookies.readCookie(this.settings.cookieName);
 			StrappLogger.Cookies.eraseCookie(this.settings.cookieName);
+			
+			if (!startTime) {
+				this.console.info('No cookie with name [' + this.settings.cookieName + '] found. Entering silent mode!');
+				this.silent = true;
+			}
 		}
 		
 		this.outStackMetaData = [];
@@ -226,6 +246,7 @@ StrappLogger.SendStack = function (config) {
 				var profileConfig = profiles[i];
 				
 				profileConfig.loggingUrl = this.settings.loggingUrl;
+				profileConfig.silent = this.silent; 
 				
 				var profile = new StrappLogger.Stack(profileConfig, onProfileComplete);
 				
@@ -245,15 +266,6 @@ StrappLogger.SendStack = function (config) {
 		
 		this.startTime = startTime || this.settings.initTime;
         
-		this.console = window.console || {
-            log: function () {
-            },
-            info: function () {
-            },
-            error: function () {
-            }
-        };
-
         jQuery(document).ajaxSend(function (e, jqxhr, settings) {
             var url = settings.url;
             var time = new Date().getTime();
@@ -440,11 +452,13 @@ StrappLogger.SendStack = function (config) {
     };
 
 	this.logAllProfilesToStrapp = function() {
-		for (var i = 0; i < this.profiles.length; i++) {
-			var profile = this.profiles[i];
-			var results = profile.getResults();
-			
-			this.logResultsToStrapp(profile.id, results);
+		if (!this.silent) {
+			for (var i = 0; i < this.profiles.length; i++) {
+				var profile = this.profiles[i];
+				var results = profile.getResults();
+				
+				this.logResultsToStrapp(profile.id, results);
+			}
 		}
 	};
 	
