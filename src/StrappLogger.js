@@ -44,6 +44,12 @@ StrappLogger.Cookies = {
 	}
 };
 
+StrappLogger.console = window.console || {
+	log: function () {},
+	info: function () {},
+	error: function () {}
+};
+
 StrappLogger.Stack = function(config, completeFnc) {
 	this.init = function(config) {
 		this.id = config.id;
@@ -204,15 +210,6 @@ StrappLogger.SendStack = function (config) {
 		};
 		
 		jQuery.extend(this.settings, config);
-
-		this.console = window.console || {
-            log: function () {
-            },
-            info: function () {
-            },
-            error: function () {
-            }
-        };
 		
 		var startTime = null;
 		
@@ -223,7 +220,7 @@ StrappLogger.SendStack = function (config) {
 			StrappLogger.Cookies.eraseCookie(this.settings.cookieName);
 			
 			if (!startTime) {
-				this.console.info('No cookie with name [' + this.settings.cookieName + '] found. Entering silent mode!');
+				StrappLogger.console.info('No cookie with name [' + this.settings.cookieName + '] found. Entering silent mode!');
 				this.silent = true;
 			}
 		}
@@ -442,7 +439,7 @@ StrappLogger.SendStack = function (config) {
                         results.requests.push(requestData);
                     }
                     else {
-                        this.console.error("Did not find [" + url + "]");
+                        StrappLogger.console.error("Did not find [" + url + "]");
                     }
                 }
             }
@@ -457,40 +454,13 @@ StrappLogger.SendStack = function (config) {
 				var profile = this.profiles[i];
 				var results = profile.getResults();
 				
-				this.logResultsToStrapp(profile.id, results);
+				this.logResultsToStrapp(results);
 			}
 		}
 	};
 	
-    this.logResultsToStrapp = function (profileId, result, callback) {
-        var json, that;
-        
-        json = JSON.stringify(result);
-        that = this;
-
-        callback = callback || function () {
-            
-        };
-
-        jQuery.ajax({
-            url: this.settings.loggingUrl,
-            type: 'POST',
-            dataType: 'json',
-            data: json,
-            contentType: 'application/json; charset=utf-8',
-            success: function (data) {
-                if (data.ok) {
-                    that.console.info("Results logged to Strapp with application reference [" + data.applicationReference + "]");
-                }
-
-                callback(data);
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                callback({
-                    ok: false
-                });
-            }
-        });
+    this.logResultsToStrapp = function (result, callback) {
+        StrappLogger.logResultsToServer(this.settings.loggingUrl, result, callback);
 		
 		if (this.settings.debug.results) {
 			var logStatement = 'Total response time: ' + result.totalResponseTime + ' ms. # of AJAX-requests: ' + result.requests.length;
@@ -499,13 +469,44 @@ StrappLogger.SendStack = function (config) {
 				logStatement += '. ClientId: [' + this.settings.clientId + ']';
 			}
 			
-			logStatement += '. Profile: [' + profileId + ']';
+			logStatement += '. Profile: [' + result.profileId + ']';
 			
-			this.console.log(logStatement);
+			StrappLogger.console.log(logStatement);
 		}
     };
 
     this.init(config);
+};
+
+StrappLogger.logResultsToServer = function(url, result, callback) {
+	var json, that;
+        
+	json = JSON.stringify(result);
+	that = this;
+
+	callback = callback || function () {
+		
+	};
+
+	jQuery.ajax({
+		url: url,
+		type: 'POST',
+		dataType: 'json',
+		data: json,
+		contentType: 'application/json; charset=utf-8',
+		success: function (data) {
+			if (data.ok) {
+				StrappLogger.console.info("Results logged to Strapp with application reference [" + data.applicationReference + "]");
+			}
+
+			callback(data);
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			callback({
+				ok: false
+			});
+		}
+	});
 };
 
 if (StrappLogger.config) {

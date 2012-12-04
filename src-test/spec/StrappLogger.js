@@ -1,7 +1,11 @@
 describe("StrappLogger.Stack", function() {
     beforeEach(function() {
-      this.server = sinon.fakeServer.create();
-      this.server.respondWith([200, {}, "OK"]);
+		this.server = sinon.fakeServer.create();
+		this.server.respondWith('POST', '/logging',  function (xhr, id) {
+			xhr.respond(200, { "Content-Type": "application/json" }, '{ "ok": true, "applicationReference": "12341234" }');
+		});
+		
+		this.server.respondWith([200, {}, "OK"]);
     });
 
     afterEach(function() {
@@ -53,6 +57,7 @@ describe("StrappLogger.Stack", function() {
 				expect(results.totalResponseTime).toBeLessThan(200);
 				expect(results.transactionName).toEqual('my-transaction');
 				expect(results.clientId).toEqual('myclient');
+				expect(results.profileId).toEqual('load-without-async');
 				expect(results.version).toEqual(1);
 			});
 		});
@@ -184,6 +189,8 @@ describe("StrappLogger.Stack", function() {
 				this.server.respond();
 
 				expect(completeFnc.callCount).toEqual(1);
+				
+				this.server.respond();
 
 				var args = completeFnc.args[0];
 				expect(args[0]).toEqual('load-before');
@@ -294,6 +301,35 @@ describe("StrappLogger.Stack", function() {
 				expect(requests[0].url).toEqual('/my/page3');
 				expect(requests[1].url).toEqual('/my/page4');
 				expect(requests[2].url).toEqual('/my/page5');
+			});
+		});
+	});
+	
+	describe("given the results is created manually", function() {
+		describe("when the results is logged", function() {
+			it("the callback should be called with ok result and a application reference", function() {
+				var callback = sinon.spy();
+
+				var result = {
+					clientId: "myclient",
+					idleTime: 0,
+					premature: false,
+					profileId: "ad-hoc-logging",
+					requests: [],
+					totalResponseTime: 1000,
+					transactionName: "my-ad-hoc-transaction",
+					version: 1
+				};
+				
+				StrappLogger.logResultsToServer('/logging', result, callback);
+				
+				this.server.respond();
+				
+				expect(callback.callCount).toEqual(1);
+				
+				var args = callback.args[0][0];
+				expect(args.ok).toEqual(true);
+				expect(args.applicationReference).toEqual('12341234');
 			});
 		});
 	});
