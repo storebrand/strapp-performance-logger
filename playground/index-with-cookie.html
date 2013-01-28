@@ -13,6 +13,7 @@
 				applicationReference: '1234',     
 				applicationReferences: null,    
 				initTime: new Date().getTime(),
+				cookieName: 'index',
 				profiles : [
 					{
 						id: 'p1'						
@@ -20,11 +21,6 @@
 					{
 						id: 'p2',
 						excludes: ['.*kic/.*', '.*vg.*', '.*nettavisen.*', '.*dagbladet.*']
-					},
-					{
-						id: 'after-page-load',
-						includes: ['.*kic/test-include.*.html'],
-						pageload: false
 					}
 				],
 				debug: {
@@ -39,10 +35,6 @@
         <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,700">
 	</head>
     <body>
-	   <input type="button" id="btnIncludeProfile" value="Klikk for å gjøre kall" />
-	   
-	   <br />
-	   
 	   <img src="wallpaper1.jpg" />
 	   
 	   <script src="jquery-1.8.2.min.js"></script>
@@ -104,22 +96,6 @@
 				  context: document.body
 				}).done(function() { 
 				  $(this).addClass("done");
-				});
-				
-				$("#btnIncludeProfile").click(function(event) {
-					$.ajax({
-					  url: "kic/test-include1.html",
-					  context: document.body
-					}).done(function() { 
-						console.log("test-include1.html returned!");
-						
-						$.ajax({
-						  url: "kic/test-include2.html",
-						  context: document.body
-						}).done(function() { 
-							console.log("test-include2.html returned!");
-						});
-					});
 				});
 			});
 	   </script>

@@ -53,19 +53,14 @@ StrappLogger.console = window.console || {
 StrappLogger.Stack = function(config, completeFnc) {
 	this.init = function(config) {
 		this.id = config.id;
-		this.outCounter = 0;
-        this.inCounter = 0;
-        this.outStack = [];
-		this.inStack = [];
-		this.complete = false;
-		this.completedTime = null;
 		this.ready = false;
 		this.loaded = false;
-		this.results = null;	
-		
+		this.results = null;
+
 		this.settings = {
 			id: null,
 			excludes: null,
+			includes: null,
 			waitAfterLoad: 3000,
 			silent: false
 		};
@@ -74,13 +69,43 @@ StrappLogger.Stack = function(config, completeFnc) {
 		
 		this.excludes = null;
 		
+		var i = 0;
+		
 		if (this.settings.excludes) {
 			this.excludes = [];
 			
-			for (var i = 0; i < this.settings.excludes.length; i++) {
+			for (i = 0; i < this.settings.excludes.length; i++) {
 				this.excludes.push(new RegExp(this.settings.excludes[i]));
 			}
 		}
+		
+		this.includes = null;
+		
+		if (this.settings.includes) {
+			this.includes = [];
+			
+			for (i = 0; i < this.settings.includes.length; i++) {
+				this.includes.push(new RegExp(this.settings.includes[i]));
+			}
+		}
+		
+		this.pageLoadProfile = this.settings.pageload;
+		
+		this.reset();
+	};
+	
+	this.reset = function() {
+		this.outCounter = 0;
+        this.inCounter = 0;
+        this.outStack = [];
+		this.inStack = [];
+		this.complete = false;
+		this.completedTime = null;
+		this.firstRequestTime = null;
+	};
+	
+	this.isPageLoadProfile = function() {
+		return this.pageLoadProfile;
 	};
 	
 	this.getOutStack = function() {
@@ -104,7 +129,12 @@ StrappLogger.Stack = function(config, completeFnc) {
 		
 		var that = this;
 		
-		if (!this.hasRecordedActivity()) {
+		/*
+		If there is no activity recorded (no AJAX-calls), wait a number of milliseconds
+		to allow time for requests before the transaction is logged to server. Note that
+		this is only relevant for page load profiles
+		*/
+		if (!this.hasRecordedActivity() && this.isPageLoadProfile()) {
 			window.setTimeout(function() {
 				that.checkStatus(time);
 			}, this.settings.waitAfterLoad);
@@ -130,14 +160,28 @@ StrappLogger.Stack = function(config, completeFnc) {
 	this.includeUrl = function(url) {
 		var include = true;
 			
+		var i = 0, result = null;
+		
 		if (this.excludes) {
-			for (var i = 0; i < this.excludes.length; i++) {
-				var result = this.excludes[i].exec(url);
+			for (i = 0; i < this.excludes.length; i++) {
+				result = this.excludes[i].exec(url);
 			
 				if  (result) {
 					include = false;
 				}
 			}
+		}
+		
+		if (include && this.includes) {
+			for (i = 0; i < this.includes.length; i++) {
+				result = this.includes[i].exec(url);
+			
+				if  (result) {
+					return true;
+				}
+			}
+			
+			return false;
 		}
 		
 		return include;
@@ -147,11 +191,11 @@ StrappLogger.Stack = function(config, completeFnc) {
 		if (this.includeUrl(url)) {
 			this.outStack[url] = time;
 			this.outCounter++;
+			
+			if (!this.firstRequestTime) {
+				this.firstRequestTime = time;
+			}
 		}
-        
-        if (!this.firstRequestTime) {
-            this.firstRequestTime = time;
-        }
     };
 
     this.inbound = function (url, time, status) {        
@@ -226,13 +270,15 @@ StrappLogger.SendStack = function (config) {
 		}
 		
 		this.outStackMetaData = [];
-		this.excludeURLs = null;
 		
 		var that = this;
 		
 		var onProfileComplete = function(profile) {
 			that.onProfileComplete(profile);
 		};
+		
+		this.numberOfPageLoadProfiles = 0;
+		this.numberOfNonPageLoadProfiles = 0;
 		
 		if (this.settings.profiles) {
 			var profiles = this.settings.profiles;
@@ -243,11 +289,18 @@ StrappLogger.SendStack = function (config) {
 				var profileConfig = profiles[i];
 				
 				profileConfig.loggingUrl = this.settings.loggingUrl;
-				profileConfig.silent = this.silent; 
+				profileConfig.silent = this.silent;
+				profileConfig.pageload = profileConfig.pageload === false ? false : true;
 				
 				var profile = new StrappLogger.Stack(profileConfig, onProfileComplete);
 				
 				this.profiles.push(profile);
+				
+				if (profile.isPageLoadProfile()) {
+					this.numberOfPageLoadProfiles++;
+				} else {
+					this.numberOfNonPageLoadProfiles++;
+				}
 			}
 		} else {
 			var defaultProfile = new StrappLogger.Stack({
@@ -258,8 +311,7 @@ StrappLogger.SendStack = function (config) {
 			this.profiles = [defaultProfile];
 		}
 		
-		this.numberOfProfiles = this.profiles.length;
-		this.completeProfiles = 0;
+		this.completePageLoadProfiles = 0;
 		
 		this.startTime = startTime || this.settings.initTime;
         
@@ -331,15 +383,35 @@ StrappLogger.SendStack = function (config) {
     };
 
 	this.onProfileComplete = function(profile) {
-		this.completeProfiles++;
-		
+		/* Create results for the profile, and publish notification */
 		var results = this.calculateResults(profile);
 		profile.setResults(results);
 		
 		this.settings.events.complete(profile.id, results);
 		
-		if (this.completeProfiles == this.numberOfProfiles) {
-			this.logAllProfilesToStrapp();
+		if (profile.isPageLoadProfile()) {
+			this.completePageLoadProfiles++;
+			
+			if (this.completePageLoadProfiles == this.numberOfPageLoadProfiles) {
+				this.logAllPageLoadProfilesToStrapp();
+				
+				// Remove all page load profiles
+				for (var i = 0; i < this.profiles.length; i++) {
+					var p = this.profiles[i];
+					
+					if (p.isPageLoadProfile()) {
+						this.profiles.splice(i, 1);
+						i--;
+					}
+				}
+				
+				StrappLogger.console.log("All page load profiles are logged, remaining profiles: " + this.profiles.length);
+			}
+		} else {
+			this.logResultsToStrapp(results);
+			
+			/* Reset the profile, because we still want to register future transaction on the profile */
+			profile.reset();
 		}
 	};
 	
@@ -386,13 +458,18 @@ StrappLogger.SendStack = function (config) {
     this.calculateResults = function (profile, premature) {
         var total, results, url, response, firstRequestTime, idleTime;
 
-        total = profile.getCompletedTime() - this.startTime;
-		idleTime = 0;
+		idleTime = 0;		
 		firstRequestTime = profile.getFirstRequestTime();
 		
-		if (firstRequestTime)
-		{
-			idleTime = firstRequestTime - this.startTime;
+		if (profile.isPageLoadProfile()) {
+			total = profile.getCompletedTime() - this.startTime;
+			
+			if (firstRequestTime)
+			{
+				idleTime = firstRequestTime - this.startTime;
+			}
+		} else {
+			total = profile.getCompletedTime() - firstRequestTime;
 		}
 		
         results = {
@@ -448,13 +525,15 @@ StrappLogger.SendStack = function (config) {
         return results;
     };
 
-	this.logAllProfilesToStrapp = function() {
+	this.logAllPageLoadProfilesToStrapp = function() {
 		if (!this.silent) {
 			for (var i = 0; i < this.profiles.length; i++) {
 				var profile = this.profiles[i];
-				var results = profile.getResults();
 				
-				this.logResultsToStrapp(results);
+				if (profile.isPageLoadProfile()) {
+					var results = profile.getResults();				
+					this.logResultsToStrapp(results);
+				}
 			}
 		}
 	};
