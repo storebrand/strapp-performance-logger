@@ -2,7 +2,7 @@ var StrappLogger = StrappLogger || {
     
 };
 
-StrappLogger.version = 2.1;
+StrappLogger.version = 2.2;
 
 StrappLogger.Cookies = {
 	createCookie: function(name, value) {
@@ -212,7 +212,13 @@ StrappLogger.Stack = function(config, completeFnc) {
     };
 
 	this.checkStatus = function(time) {
-		if (this.outCounter == this.inCounter) {
+		var complete = this.outCounter == this.inCounter;
+		
+		if (!this.isPageLoadProfile()) {
+			complete = this.outCounter === this.includes.length;
+		} 
+		
+		if (complete) {
 			this.complete = true;
 			this.completedTime = time;
 			
@@ -387,8 +393,6 @@ StrappLogger.SendStack = function (config) {
 		var results = this.calculateResults(profile);
 		profile.setResults(results);
 		
-		this.settings.events.complete(profile.id, results);
-		
 		if (profile.isPageLoadProfile()) {
 			this.completePageLoadProfiles++;
 			
@@ -538,17 +542,18 @@ StrappLogger.SendStack = function (config) {
 		}
 	};
 	
-    this.logResultsToStrapp = function (result, callback) {
-        StrappLogger.logResultsToServer(this.settings.loggingUrl, result, callback);
+    this.logResultsToStrapp = function (results, callback) {
+        StrappLogger.logResultsToServer(this.settings.loggingUrl, results, callback);
+		this.settings.events.complete(results.profileId, results);
 		
 		if (this.settings.debug.results) {
-			var logStatement = 'Total response time: ' + result.totalResponseTime + ' ms. # of AJAX-requests: ' + result.requests.length;
+			var logStatement = 'Total response time: ' + results.totalResponseTime + ' ms. # of AJAX-requests: ' + results.requests.length;
 			
 			if (this.settings.clientId) {
 				logStatement += '. ClientId: [' + this.settings.clientId + ']';
 			}
 			
-			logStatement += '. Profile: [' + result.profileId + ']';
+			logStatement += '. Profile: [' + results.profileId + ']';
 			
 			StrappLogger.console.log(logStatement);
 		}

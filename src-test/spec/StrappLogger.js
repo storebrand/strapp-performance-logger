@@ -261,6 +261,72 @@ describe("StrappLogger.Stack", function() {
 			});
 		});
 		
+		describe("when all async requests for two profiles are complete, and one one of the profiles is not a page load profile", function() {
+			it("the logger should first flag complete for the page load profile, then flag for the non page load profile", function() {
+				var completeFnc = sinon.spy();
+
+				var sendStack = new StrappLogger.SendStack({
+					initTime : new Date().getTime(),
+					loggingUrl : '/logging',
+					profiles : [
+						{
+							id: 'p1'
+						},
+						{
+							id: 'p2',
+							includes: ['/p1/page2', 'another'],
+							pageload: false
+						}
+					],
+					events : {
+						complete : completeFnc
+					},
+					debug: { results: true }
+				});
+
+				sendStack.flagReady();
+				sendStack.flagLoaded();
+
+				jQuery.ajax({url: "/p1/page1"});
+				jQuery.ajax({url: "/p1/page2"});
+				jQuery.ajax({url: "/p2/page2"});
+
+				this.server.respond();
+
+				expect(completeFnc.callCount).toEqual(1);
+
+				// p1
+				var args = completeFnc.args[0];
+				expect(args[0]).toEqual('p1');
+
+				var results = args[1];
+				var requests = results.requests;
+
+				expect(requests.length).toEqual(3);
+				expect(requests[0].url).toEqual('/p1/page1');
+				expect(requests[1].url).toEqual('/p1/page2');
+				expect(requests[2].url).toEqual('/p2/page2');
+				
+				// Call the another URL, which should make the p2-profile complete
+				jQuery.ajax({url: "another"});
+
+				this.server.respond();
+				
+				// p2
+				expect(completeFnc.callCount).toEqual(2);
+				
+				args = completeFnc.args[1];
+				expect(args[0]).toEqual('p2');
+
+				results = args[1];
+				requests = results.requests;
+
+				expect(requests.length).toEqual(2);
+				expect(requests[0].url).toEqual('/p1/page2');
+				expect(requests[1].url).toEqual('another');
+			});
+		});
+		
 		describe("when all async requests for a single profile are complete and the load event fires after the async requests", function() {
 			it("the logger should flag complete", function() {
 				var completeFnc = sinon.spy();
