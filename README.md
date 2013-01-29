@@ -1,5 +1,13 @@
 # Strapp logger
 
+## Changelog
+
+### 2.3 - 29.01.2013
+
+Støtte for profiler som trigges uavhengig av page load.
+
+## Bakgrunn
+
 Tradisjonelt logger vi tid på transaksjoner til Strapp fra serversiden. I moderne webapplikasjoner er det derimot slik at mye tid kan gå med etter at den første responsen er levert fra serveren. Relevante faktorerer her
 er AJAX-forespørsler, lasting av statiske ressurser som Javascript, CSS og grafikk, samt eksekveringstid på Javascript. Av den grunn er det ofte et betydelig misforhold mellom tiden som medgår på serversiden og den
 tiden en bruker opplever medgår i nettleseren.
